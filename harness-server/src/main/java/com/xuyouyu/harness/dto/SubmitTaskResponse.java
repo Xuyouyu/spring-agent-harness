@@ -1,5 +1,5 @@
 package com.xuyouyu.harness.dto;
 
-public record SubmitTaskResponse(String status, String message) {
+public record SubmitTaskResponse(String runId, String status, String message) {
 
 }
