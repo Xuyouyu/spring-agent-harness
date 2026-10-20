@@ -8,26 +8,32 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.http.HttpStatus;
+
 import com.xuyouyu.harness.dto.SubmitTaskRequest;
 import com.xuyouyu.harness.dto.SubmitTaskResponse;
 import com.xuyouyu.harness.dto.TaskRunStatusResponse;
 import com.xuyouyu.harness.model.TaskRun;
 
 import jakarta.validation.Valid;
+
+import com.xuyouyu.harness.service.TaskExecutionService;
 import com.xuyouyu.harness.service.TaskRunService;
 
 @RestController
 public class TaskController {
     private final TaskRunService taskRunService;
+    private final TaskExecutionService taskExecutionService;
 
-    public TaskController(TaskRunService taskRunService) {
+    public TaskController(TaskRunService taskRunService, TaskExecutionService taskExecutionService) {
         this.taskRunService = taskRunService;
+        this.taskExecutionService = taskExecutionService;
     }
 
     @PostMapping("/api/harness/runs")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public SubmitTaskResponse runs(@RequestBody @Valid SubmitTaskRequest request) {
         TaskRun run = taskRunService.createRun(request.prompt());
+        taskExecutionService.execute(run.runId());
         return new SubmitTaskResponse(run.runId(), run.status(), "任务已接收");
     }
 

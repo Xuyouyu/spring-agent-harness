@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import com.xuyouyu.harness.llm.ModelClient;
 
 @Service
-@Async
 public class TaskExecutionService {
     private final TaskRunService taskRunService;
     private final ModelClient modelClient;
@@ -16,6 +15,7 @@ public class TaskExecutionService {
         this.modelClient = modelClient;
     }
 
+    @Async
     public void execute(String runId) {
         // Mark the task as running
         String prompt = taskRunService.markRunning(runId).prompt();
