@@ -37,7 +37,7 @@ public class TaskController {
         if (run == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Run not found");
         } else {
-            return new TaskRunStatusResponse(run.runId(), run.status());
+            return new TaskRunStatusResponse(run.runId(), run.status(), run.result(), run.errorMessage());
         }
     }
 

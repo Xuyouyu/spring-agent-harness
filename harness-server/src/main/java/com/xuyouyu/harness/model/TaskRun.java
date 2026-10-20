@@ -1,5 +1,5 @@
 package com.xuyouyu.harness.model;
 
-public record TaskRun(String runId, String prompt, String status) {
+public record TaskRun(String runId, String prompt, String status, String result, String errorMessage) {
 
 }
