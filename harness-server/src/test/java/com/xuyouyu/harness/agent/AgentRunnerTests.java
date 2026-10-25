@@ -13,7 +13,7 @@ public class AgentRunnerTests {
         @Override
         public AgentDecision plan(String prompt, String toolresult) {
             if (toolresult == null) {
-                return new ToolCall("log_error_count", prompt);
+                return new ToolCall("1","log_error_count", prompt);
             } else {
                 return new FinalAnswer("Final Answer: " + toolresult);
             }
@@ -45,7 +45,7 @@ public class AgentRunnerTests {
             @Override
             public AgentDecision plan(String prompt, String toolresult) {
                 if (toolresult == null) {
-                    return new ToolCall("unknown_tool", prompt);
+                    return new ToolCall("2","unknown_tool", prompt);
                 } else {
                     return new FinalAnswer("Final Answer: " + toolresult);
                 }
