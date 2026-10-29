@@ -3,7 +3,6 @@ package com.xuyouyu.harness.tool;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Comparator;
 
 import org.springframework.stereotype.Component;
 
@@ -25,7 +24,7 @@ public class ToolRegistry {
 
     public List<HarnessTool> listTools() {
         return tools.values().stream()
-                .sorted(Comparator.comparing(HarnessTool::getName))
+                .sorted((left, right) -> left.getName().compareTo(right.getName()))
                 .toList();
     }
     

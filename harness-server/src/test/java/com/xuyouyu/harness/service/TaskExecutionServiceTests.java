@@ -5,7 +5,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 import com.xuyouyu.harness.model.TaskRun;
-import com.xuyouyu.harness.model.RunEvent;
 import com.xuyouyu.harness.agent.AgentDecision;
 import com.xuyouyu.harness.agent.AgentPlanner;
 import com.xuyouyu.harness.agent.AgentRunner;
@@ -47,7 +46,7 @@ public class TaskExecutionServiceTests {
         Assertions.assertEquals("错误行数：2", finished.result());
         Assertions.assertNull(finished.errorMessage());
         Assertions.assertEquals(List.of("ACCEPTED", "RUNNING", "TOOL_CALL", "TOOL_RESULT", "SUCCEEDED"),
-                taskRunService.findEvents(run.runId()).stream().map(RunEvent::type).toList());
+                taskRunService.findEvents(run.runId()).stream().map(event -> event.type()).toList());
     }
 
     @Test
@@ -65,6 +64,6 @@ public class TaskExecutionServiceTests {
         Assertions.assertEquals("Agent 执行失败，请查看服务日志", finished.errorMessage());
         Assertions.assertNull(finished.result());
         Assertions.assertEquals(List.of("ACCEPTED", "RUNNING", "TOOL_CALL", "FAILED"),
-                taskRunService.findEvents(run.runId()).stream().map(RunEvent::type).toList());
+                taskRunService.findEvents(run.runId()).stream().map(event -> event.type()).toList());
     }
 }

@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import com.xuyouyu.harness.model.RunEvent;
 import com.xuyouyu.harness.model.TaskRun;
 
 class TaskRunServicePersistenceTests {
@@ -36,7 +35,7 @@ class TaskRunServicePersistenceTests {
         Assertions.assertEquals("服务重启中断任务", reopened.findRun(interrupted.runId()).errorMessage());
         Assertions.assertEquals("SUCCEEDED", reopened.findRun(completed.runId()).status());
         Assertions.assertEquals(List.of("ACCEPTED", "RUNNING", "FAILED"),
-                reopened.findEvents(interrupted.runId()).stream().map(RunEvent::type).toList());
+                reopened.findEvents(interrupted.runId()).stream().map(event -> event.type()).toList());
         Assertions.assertEquals(0, reopened.recoverUnfinishedRuns(Instant.now().plusSeconds(1)));
     }
 }
