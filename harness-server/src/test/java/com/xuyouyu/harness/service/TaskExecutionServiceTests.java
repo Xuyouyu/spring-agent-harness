@@ -1,50 +1,70 @@
 package com.xuyouyu.harness.service;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 import com.xuyouyu.harness.model.TaskRun;
-import com.xuyouyu.harness.llm.ModelClient;
+import com.xuyouyu.harness.model.RunEvent;
+import com.xuyouyu.harness.agent.AgentDecision;
+import com.xuyouyu.harness.agent.AgentPlanner;
+import com.xuyouyu.harness.agent.AgentRunner;
+import com.xuyouyu.harness.agent.FinalAnswer;
+import com.xuyouyu.harness.agent.ToolCall;
+import com.xuyouyu.harness.agent.ToolExecutionResult;
+import com.xuyouyu.harness.tool.LogErrorCountTool;
+import com.xuyouyu.harness.tool.ToolRegistry;
 
 public class TaskExecutionServiceTests {
-    // This class is intended for testing the TaskExecutionService.
-    public class TestModelClient implements ModelClient {
+    private static class FakePlanner implements AgentPlanner {
         @Override
-        public String generate(String prompt) {
-            // Simulate a successful model generation
-            return "端口测试成功";
+        public AgentDecision plan(String prompt, List<ToolExecutionResult> history) {
+            if (history.isEmpty()) {
+                return new ToolCall("call_1", "log_error_count", prompt);
+            }
+            return new FinalAnswer("错误行数：" + history.getLast().output());
         }
     }
 
-    public class TestModelClientFailure implements ModelClient {
+    private static class MissingToolPlanner implements AgentPlanner {
         @Override
-        public String generate(String prompt) {
-            // Simulate a failure in model generation
-            throw new RuntimeException("模型调用失败");
+        public AgentDecision plan(String prompt, List<ToolExecutionResult> history) {
+            return new ToolCall("call_2", "missing_tool", prompt);
         }
     }
-    @Test 
+    @Test
     public void testExecute() {
-        TaskRunService taskRunService = new TaskRunService();
-        TaskRun run = taskRunService.createRun("测试任务");
-        TestModelClient testModelClient = new TestModelClient();
-        TaskExecutionService taskExecutionService = new TaskExecutionService(taskRunService, testModelClient);
+        TaskRunService taskRunService = TaskRunServiceTestFactory.create();
+        TaskRun run = taskRunService.createRun("INFO started\nERROR A\nERROR B");
+        ToolRegistry toolRegistry = new ToolRegistry(List.of(new LogErrorCountTool()));
+        AgentRunner agentRunner = new AgentRunner(new FakePlanner(), toolRegistry);
+        TaskExecutionService taskExecutionService = new TaskExecutionService(taskRunService, agentRunner);
+
         taskExecutionService.execute(run.runId());
-        TaskRun finished=taskRunService.findRun(run.runId());
+
+        TaskRun finished = taskRunService.findRun(run.runId());
         Assertions.assertEquals("SUCCEEDED", finished.status());
-        Assertions.assertEquals("端口测试成功", finished.result());
+        Assertions.assertEquals("错误行数：2", finished.result());
+        Assertions.assertNull(finished.errorMessage());
+        Assertions.assertEquals(List.of("ACCEPTED", "RUNNING", "TOOL_CALL", "TOOL_RESULT", "SUCCEEDED"),
+                taskRunService.findEvents(run.runId()).stream().map(RunEvent::type).toList());
     }
 
-    @Test 
+    @Test
     public void testExecuteFailure() {
-        TaskRunService taskRunService = new TaskRunService();
+        TaskRunService taskRunService = TaskRunServiceTestFactory.create();
         TaskRun run = taskRunService.createRun("测试任务");
-        TestModelClientFailure testModelClientFailure = new TestModelClientFailure();
-        TaskExecutionService taskExecutionService = new TaskExecutionService(taskRunService, testModelClientFailure);
-        taskExecutionService.execute(run.runId());
-        TaskRun finished=taskRunService.findRun(run.runId());
-        Assertions.assertEquals("FAILED", finished.status());
-        Assertions.assertEquals("模型调用失败", finished.errorMessage());
-        Assertions.assertNull(finished.result());
-    }
+        ToolRegistry toolRegistry = new ToolRegistry(List.of(new LogErrorCountTool()));
+        AgentRunner agentRunner = new AgentRunner(new MissingToolPlanner(), toolRegistry);
+        TaskExecutionService taskExecutionService = new TaskExecutionService(taskRunService, agentRunner);
 
+        taskExecutionService.execute(run.runId());
+
+        TaskRun finished = taskRunService.findRun(run.runId());
+        Assertions.assertEquals("FAILED", finished.status());
+        Assertions.assertEquals("Agent 执行失败，请查看服务日志", finished.errorMessage());
+        Assertions.assertNull(finished.result());
+        Assertions.assertEquals(List.of("ACCEPTED", "RUNNING", "TOOL_CALL", "FAILED"),
+                taskRunService.findEvents(run.runId()).stream().map(RunEvent::type).toList());
+    }
 }

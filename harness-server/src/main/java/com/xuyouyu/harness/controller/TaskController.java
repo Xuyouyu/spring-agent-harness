@@ -1,5 +1,7 @@
 package com.xuyouyu.harness.controller;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +15,7 @@ import com.xuyouyu.harness.dto.SubmitTaskRequest;
 import com.xuyouyu.harness.dto.SubmitTaskResponse;
 import com.xuyouyu.harness.dto.TaskRunStatusResponse;
 import com.xuyouyu.harness.model.TaskRun;
+import com.xuyouyu.harness.model.RunEvent;
 
 import jakarta.validation.Valid;
 
@@ -45,6 +48,14 @@ public class TaskController {
         } else {
             return new TaskRunStatusResponse(run.runId(), run.status(), run.result(), run.errorMessage());
         }
+    }
+
+    @GetMapping("/api/harness/runs/{runId}/events")
+    public List<RunEvent> getRunEvents(@PathVariable String runId) {
+        if (taskRunService.findRun(runId) == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Run not found");
+        }
+        return taskRunService.findEvents(runId);
     }
 
 }
