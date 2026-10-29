@@ -1,6 +1,8 @@
 package com.xuyouyu.harness.llm;
 
 
+import org.springframework.stereotype.Component;
+
 import com.xuyouyu.harness.agent.AgentDecision;
 import com.xuyouyu.harness.agent.FinalAnswer;
 import com.xuyouyu.harness.agent.ToolCall;
@@ -8,7 +10,7 @@ import com.xuyouyu.harness.agent.ToolCall;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
-
+@Component
 public class DeepSeekDecisionMapper {
     public AgentDecision map(DeepSeekChatResponse deepSeekChatResponse) {
         // Implementation for mapping DeepSeekChatResponse to AgentDecision

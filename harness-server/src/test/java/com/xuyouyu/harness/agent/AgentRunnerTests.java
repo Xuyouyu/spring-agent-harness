@@ -11,11 +11,11 @@ import org.junit.jupiter.api.Assertions;
 public class AgentRunnerTests {
     public class FakePlanner implements AgentPlanner {
         @Override
-        public AgentDecision plan(String prompt, String toolresult) {
-            if (toolresult == null) {
+        public AgentDecision plan(String prompt, List<ToolExecutionResult> history) {
+            if (history.isEmpty()) {
                 return new ToolCall("1","log_error_count", prompt);
             } else {
-                return new FinalAnswer("Final Answer: " + toolresult);
+                return new FinalAnswer("Final Answer: " + history.getLast().output());
             }
         }
     }
@@ -43,11 +43,11 @@ public class AgentRunnerTests {
         // Temporarily override the plan method to return an unknown tool
         AgentPlanner unknownToolPlanner = new AgentPlanner() {
             @Override
-            public AgentDecision plan(String prompt, String toolresult) {
-                if (toolresult == null) {
+            public AgentDecision plan(String prompt, List<ToolExecutionResult> history) {
+                if (history.isEmpty()) {
                     return new ToolCall("2","unknown_tool", prompt);
                 } else {
-                    return new FinalAnswer("Final Answer: " + toolresult);
+                    return new FinalAnswer("Final Answer: " + history.getLast().output());
                 }
             }
         };
@@ -57,5 +57,34 @@ public class AgentRunnerTests {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             Runner.run(prompt);
         });
+    }
+
+    @Test
+    public void testMultipleToolCalls() {
+        AgentPlanner planner = (prompt, history) -> {
+            if (history.isEmpty()) {
+                return new ToolCall("call_1", "log_error_count", "ERROR A");
+            }
+            if (history.size() == 1) {
+                return new ToolCall("call_2", "log_error_count", "ERROR A\nERROR B");
+            }
+            return new FinalAnswer(history.get(0).output() + "," + history.get(1).output());
+        };
+        AgentRunner runner = new AgentRunner(planner,
+                new ToolRegistry(List.of(new LogErrorCountTool())));
+
+        Assertions.assertEquals("1,2", runner.run("统计两段日志"));
+    }
+
+    @Test
+    public void testStopsRepeatedToolCalls() {
+        AgentPlanner planner = (prompt, history) ->
+                new ToolCall("call_" + history.size(), "log_error_count", "ERROR A");
+        AgentRunner runner = new AgentRunner(planner,
+                new ToolRegistry(List.of(new LogErrorCountTool())));
+
+        IllegalStateException error = Assertions.assertThrows(IllegalStateException.class,
+                () -> runner.run("一直调用工具"));
+        Assertions.assertTrue(error.getMessage().contains("上限"));
     }
 }

@@ -3,6 +3,7 @@ package com.xuyouyu.harness.tool;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Comparator;
 
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,16 @@ public class ToolRegistry {
         }
     }
     public void register(HarnessTool tool) {
-        tools.put(tool.getName(), tool);
+        HarnessTool previous = tools.putIfAbsent(tool.getName(), tool);
+        if (previous != null) {
+            throw new IllegalArgumentException("重复的工具名称: " + tool.getName());
+        }
+    }
+
+    public List<HarnessTool> listTools() {
+        return tools.values().stream()
+                .sorted(Comparator.comparing(HarnessTool::getName))
+                .toList();
     }
     
     public String executeTool(String toolName, String input) {
